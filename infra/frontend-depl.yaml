@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-deployment
+  name: mini-devops-project-frontend
 spec:
   selector:
     matchLabels:
-      app: frontend-deployment
+      app: mini-devops-project-frontend
   template:
     metadata:
       labels:
-        app: frontend-deployment
+        app: mini-devops-project-frontend
     spec:
       containers:
       - name: frontend
-        image: frontend-image:latest
+        image: asitkr/mini-devops-project-frontend:1.0.0
         ports:
           - containerPort: 3000

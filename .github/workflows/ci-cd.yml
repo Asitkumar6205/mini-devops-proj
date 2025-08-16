@@ -1,0 +1,63 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_FRONTEND: ${{ env.REGISTRY }}/Asitkumar6205/mini-devops-frontend
+  IMAGE_BACKEND: ${{ env.REGISTRY }}/Asitkumar6205/mini-devops-backend
+  KUBE_NAMESPACE: default
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./frontend
+        push: true
+        tags: ${{ env.IMAGE_FRONTEND }}:latest
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend
+        push: true
+        tags: ${{ env.IMAGE_BACKEND }}:latest
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Set up kubeconfig
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl set image deployment/frontend-deployment frontend=${{ env.IMAGE_FRONTEND }}:latest --namespace $KUBE_NAMESPACE
+        kubectl set image deployment/backend-deployment backend=${{ env.IMAGE_BACKEND }}:latest --namespace $KUBE_NAMESPACE
+
